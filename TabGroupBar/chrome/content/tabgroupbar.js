@@ -9,6 +9,10 @@ var objTabGroupBar = {
     ignoreNextEvent: false,
     hideWhenMouseIsAway: false,
     debugTabs: [],
+    groupSortOrder: {},
+	SessionStore: Components.classes["@mozilla.org/browser/sessionstore;1"]
+    	.getService(Components.interfaces.nsISessionStore),
+
 };
 
 objTabGroupBar.init = function(window){
@@ -46,6 +50,7 @@ objTabGroupBar.refreshInfo = function(){
     console.log("Preference change");
     var preferences = Components.classes["@mozilla.org/preferences-service;1"]
         .getService(Components.interfaces.nsIPrefService).getBranch("extensions.tabgroupbar.");
+   	 
     preferences.QueryInterface(Components.interfaces.nsIPrefBranch);
     var previousValue = this.hideWhenMouseIsAway;
     this.hideWhenMouseIsAway = preferences.getBoolPref("hideOnMouseLeave");
@@ -194,6 +199,7 @@ objTabGroupBar.addDebugTabs = function(){
 // Takes a parameter so it can be used as an event handler
 objTabGroupBar.reloadGroupTabs = function(event){
     this.refreshInfo();
+    this.loadSortOrder();
     this.clearGroupTabs();
     this.addGroupTabs();
     this.addDebugTabs();
@@ -204,6 +210,12 @@ objTabGroupBar.addGroupTabs = function(){
     this.tabView = this.getTabView();
     let contentWindow = this.tabView.getContentWindow();
     let groupItems = contentWindow.GroupItems.groupItems;
+
+	// sort tabs in specified order
+	groupItems.sort(function (a, b) {
+		return objTabGroupBar.groupSortOrder[a.id] - objTabGroupBar.groupSortOrder[b.id]
+	})
+    
     let activeGroup = contentWindow.GroupItems.getActiveGroupItem();
     for (let i = 0; i<groupItems.length;i++)
     {
@@ -215,6 +227,30 @@ objTabGroupBar.addGroupTabs = function(){
         }
     }
 };
+
+// save group sort order to session
+objTabGroupBar.saveSortOrder = function() {
+	this.SessionStore.setWindowValue(window, "TabGroupBar_SortOrder", JSON.stringify(this.groupSortOrder))
+}
+
+// load group sort order from session (or from group ID order if no session data saved)
+objTabGroupBar.loadSortOrder = function() {
+	var sortOrder = this.SessionStore.getWindowValue(this.window, "TabGroupBar_SortOrder")
+    // if no saved sort order, we sort according to group id
+    if (sortOrder == "") {
+    	sortOrder = {}
+    	var current = 1
+    	this.tabView.getContentWindow().GroupItems.groupItems.map(
+    		function (group) { sortOrder[group.id] = current; current += 1; }
+    	)
+    }
+    else {
+    	sortOrder = JSON.parse(sortOrder)
+    }
+    this.groupSortOrder = sortOrder
+    // save the sort order to avoid having to recalculate it next time
+    this.saveSortOrder()
+}
 
 objTabGroupBar.getGroupTitle = function(groupItem){
     var title = groupItem.getTitle();
@@ -296,6 +332,41 @@ objTabGroupBar.switchGroupTo = function(groupId){
     this.window.gBrowser.selectedTab = tabItem.tab;
 };
 
+// move group tab one position to the left
+objTabGroupBar.moveTabLeft = function(event) {
+	var group = this.tabView.getContentWindow().GroupItems.getActiveGroupItem()
+	var index = this.tabView.getContentWindow().GroupItems.groupItems.indexOf(group)
+	
+	// if already leftmost group, can't move any further
+	if (index == 0) return
+	
+	var prevGroup = this.tabView.getContentWindow().GroupItems.groupItems[index-1]
+	var tmp = this.groupSortOrder[group.id]
+	// swap our sort order with that of the group to our left
+	this.groupSortOrder[group.id] = this.groupSortOrder[prevGroup.id]
+	this.groupSortOrder[prevGroup.id] = tmp
+	this.saveSortOrder()
+	
+	this.reloadGroupTabs()
+}
+
+// move group tab one position to the left
+objTabGroupBar.moveTabRight = function(event) {
+	var group = this.tabView.getContentWindow().GroupItems.getActiveGroupItem()
+	var index = this.tabView.getContentWindow().GroupItems.groupItems.indexOf(group)
+	
+	// if already rightmost group, can't move any further
+	if (index == this.tabView.getContentWindow().GroupItems.groupItems.length-1) return
+	
+	var nextGroup = this.tabView.getContentWindow().GroupItems.groupItems[index+1]
+	var tmp = this.groupSortOrder[group.id]
+	// swap our sort order with that of the group to our left
+	this.groupSortOrder[group.id] = this.groupSortOrder[nextGroup.id]
+	this.groupSortOrder[nextGroup.id] = tmp
+	this.saveSortOrder()
+	
+	this.reloadGroupTabs()
+}
 
 objTabGroupBar.onCloseGroupContextMenuAction  =  function(event){
     let tab = this.getPopupSourceElement(event);

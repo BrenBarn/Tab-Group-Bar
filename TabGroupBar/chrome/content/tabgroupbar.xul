@@ -53,8 +53,10 @@
         <arrowscrollbox orient="horizontal">
           <tabs id="TabGroupBar-TabBox-Tabs" flex="1"/>
         </arrowscrollbox>
-
       </tabbox>
+      <toolbarbutton class="TabGroup move left" oncommand="objTabGroupBar.moveTabLeft()" label="&#x2190;"/>
+      <toolbarbutton class="TabGroup move right" oncommand="objTabGroupBar.moveTabRight()" label="&#x2192;"/>
+
     </toolbar>
   </toolbox>
 </overlay>
