@@ -269,7 +269,6 @@ objTabGroupBar.addGroupTab = function(groupItem) {
     tab.setAttribute("context", "TabGroupBar-TabContextMenu");
     tab.value = groupItem.id;
     
-    
     //tab.setAttribute("oncommand", "objTabGroupBar.switchGroupTo(event.target.value);");
     //tab.addEventListener("command", function(event) {objTabGroupBar.switchGroupTo(event.target.value);});
     //tab.setAttribute("ondblclick", "objTabGroupBar.createRenameGroupTextBox(event.target);");
@@ -382,6 +381,15 @@ objTabGroupBar.closeGroup = function(groupId){
     }
     //group.getChildren().forEach(function(tab){tab.close();});
     group.close({immediately: true});
+    
+    // shift all tabs to our right down one in sort order
+    for (key in this.groupSortOrder) {
+    	if (this.groupSortOrder[key] > this.groupSortOrder[groupId]) {
+    		this.groupSortOrder[key] -= 1
+    	}
+    }
+    delete this.groupSortOrder[groupId]
+    this.saveSortOrder()
 };
 
 objTabGroupBar.createNewGroup = function(){
@@ -391,6 +399,10 @@ objTabGroupBar.createNewGroup = function(){
         var blankTab = objTabGroupBar.window.getBrowser().addTab("about:blank");
         GroupItems.moveTabToGroupItem(blankTab, newGroup.id);
         objTabGroupBar.addGroupTab(newGroup);
+        
+        // sort this tab at the right
+        objTabGroupBar.groupSortOrder[newGroup.id] = Object.keys(objTabGroupBar.groupSortOrder).length+1
+    	objTabGroupBar.saveSortOrder()
     });
 };
 
