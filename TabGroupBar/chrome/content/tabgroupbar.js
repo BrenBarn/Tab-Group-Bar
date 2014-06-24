@@ -25,6 +25,8 @@ objTabGroupBar.init = function(window){
     this.tabView = this.getTabView();
     this.window = window;
 
+	// doing this early apparently makes group tabs load BEFORE the active page loads
+    this.tabView._initFrame()
 
     this.refreshInfo();
 
@@ -47,7 +49,7 @@ objTabGroupBar.observe = function(subject, topic, data){
 
 objTabGroupBar.refreshInfo = function(){
     let console = (Cu.import("resource://gre/modules/devtools/Console.jsm", {})).console;
-    console.log("Preference change");
+    //console.log("Preference change");
     var preferences = Components.classes["@mozilla.org/preferences-service;1"]
         .getService(Components.interfaces.nsIPrefService).getBranch("extensions.tabgroupbar.");
    	 
