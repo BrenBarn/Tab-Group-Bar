@@ -9,7 +9,7 @@ var objTabGroupBar = {
     ignoreNextEvent: false,
     hideWhenMouseIsAway: false,
     debugTabs: [],
-    groupSortOrder: {},
+    groupSortOrder: [],
 	SessionStore: Components.classes["@mozilla.org/browser/sessionstore;1"]
     	.getService(Components.interfaces.nsISessionStore),
 
@@ -215,7 +215,7 @@ objTabGroupBar.addGroupTabs = function(){
 
 	// sort tabs in specified order
 	groupItems.sort(function (a, b) {
-		return objTabGroupBar.groupSortOrder[a.id] - objTabGroupBar.groupSortOrder[b.id]
+		return objTabGroupBar.groupSortOrder.indexOf(a.id) - objTabGroupBar.groupSortOrder.indexOf(b.id)
 	})
     
     let activeGroup = contentWindow.GroupItems.getActiveGroupItem();
@@ -240,10 +240,8 @@ objTabGroupBar.loadSortOrder = function() {
 	var sortOrder = this.SessionStore.getWindowValue(this.window, "TabGroupBar_SortOrder")
     // if no saved sort order, we sort according to group id
     if (sortOrder == "") {
-    	sortOrder = {}
-    	var current = 1
-    	this.tabView.getContentWindow().GroupItems.groupItems.map(
-    		function (group) { sortOrder[group.id] = current; current += 1; }
+    	sortOrder = this.tabView.getContentWindow().GroupItems.groupItems.map(
+    		function (group) { return group.id }
     	)
     }
     else {
@@ -341,11 +339,9 @@ objTabGroupBar.moveTabLeft = function(event) {
 	// if already leftmost group, can't move any further
 	if (index == 0) return
 	
-	var prevGroup = this.tabView.getContentWindow().GroupItems.groupItems[index-1]
-	var tmp = this.groupSortOrder[group.id]
 	// swap our sort order with that of the group to our left
-	this.groupSortOrder[group.id] = this.groupSortOrder[prevGroup.id]
-	this.groupSortOrder[prevGroup.id] = tmp
+	this.groupSortOrder[index] = this.groupSortOrder[index-1]
+	this.groupSortOrder[index-1] = group.id
 	this.saveSortOrder()
 	
 	this.reloadGroupTabs()
@@ -359,11 +355,9 @@ objTabGroupBar.moveTabRight = function(event) {
 	// if already rightmost group, can't move any further
 	if (index == this.tabView.getContentWindow().GroupItems.groupItems.length-1) return
 	
-	var nextGroup = this.tabView.getContentWindow().GroupItems.groupItems[index+1]
-	var tmp = this.groupSortOrder[group.id]
 	// swap our sort order with that of the group to our left
-	this.groupSortOrder[group.id] = this.groupSortOrder[nextGroup.id]
-	this.groupSortOrder[nextGroup.id] = tmp
+	this.groupSortOrder[index] = this.groupSortOrder[index+1]
+	this.groupSortOrder[index+1] = group.id
 	this.saveSortOrder()
 	
 	this.reloadGroupTabs()
@@ -385,12 +379,8 @@ objTabGroupBar.closeGroup = function(groupId){
     group.close({immediately: true});
     
     // shift all tabs to our right down one in sort order
-    for (key in this.groupSortOrder) {
-    	if (this.groupSortOrder[key] > this.groupSortOrder[groupId]) {
-    		this.groupSortOrder[key] -= 1
-    	}
-    }
-    delete this.groupSortOrder[groupId]
+    index = this.groupSortOrder.indexOf(groupId)
+    this.groupSortOrder.splice(groupId, groupId)
     this.saveSortOrder()
 };
 
@@ -403,7 +393,7 @@ objTabGroupBar.createNewGroup = function(){
         objTabGroupBar.addGroupTab(newGroup);
         
         // sort this tab at the right
-        objTabGroupBar.groupSortOrder[newGroup.id] = Object.keys(objTabGroupBar.groupSortOrder).length+1
+        objTabGroupBar.groupSortOrder.push(newGroup.id)
     	objTabGroupBar.saveSortOrder()
     });
 };
