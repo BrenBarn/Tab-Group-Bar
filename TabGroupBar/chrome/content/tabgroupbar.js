@@ -123,11 +123,27 @@ objTabGroupBar.addGlobalEventListeners = function(){
 			}
 		}
 	};
+	var closeTab = function (event) {
+		event.stopPropagation()
+		if (gBrowser.visibleTabs.length == 0) {
+			var currentGroup = TabView.getContentWindow().GroupItems.getActiveGroupItem()
+			var pos = objTabGroupBar.groupSortOrder.indexOf(currentGroup.id)
+			if (pos == 0) {
+				var switchTo = objTabGroupBar.groupSortOrder[pos+1]
+			} else {
+				var switchTo = objTabGroupBar.groupSortOrder[pos-1]
+			}
+			objTabGroupBar.cleanUpGroup(currentGroup.id)
+			objTabGroupBar.switchGroupTo(switchTo)
+			objTabGroupBar.reloadGroupTabs()
+		}
+	}
 	tabContainer.addEventListener("TabSelect", switchSelectedGroupTab);
 	this.tabsContainer.addEventListener("select", changeGroupTab, false);
     window.addEventListener("tabviewframeinitialized", loadOnRestore);
     window.addEventListener("SSTabRestored", loadOnRestore);
     document.addEventListener("tabviewhidden", reloadOnEvent);
+    gBrowser.tabContainer.addEventListener("TabClose", closeTab, false)
 };
 
 objTabGroupBar.hideToolbar = function TabGroupBar__hideToolbar (event) { document.getElementById("TabGroupBar-Toolbar").setAttribute("collapsed", "true"); };
@@ -236,10 +252,10 @@ objTabGroupBar.saveSortOrder = function() {
 }
 
 // load group sort order from session (or from group ID order if no session data saved)
-objTabGroupBar.loadSortOrder = function() {
+objTabGroupBar.loadSortOrder = function(force) {
 	var sortOrder = this.SessionStore.getWindowValue(this.window, "TabGroupBar_SortOrder")
     // if no saved sort order, we sort according to group id
-    if (sortOrder == "") {
+    if (sortOrder == "" || force) {
     	sortOrder = this.tabView.getContentWindow().GroupItems.groupItems.map(
     		function (group) { return group.id }
     	)
@@ -376,13 +392,20 @@ objTabGroupBar.closeGroup = function(groupId){
     	group.getChildren()[0].close()
     }
     //group.getChildren().forEach(function(tab){tab.close();});
-    group.close({immediately: true});
+	this.cleanUpGroup(groupId)
+};
+
+objTabGroupBar.cleanUpGroup = function (groupId) {
+	var group = this.tabView.getContentWindow().GroupItems.groupItem(groupId)
+	
+	group.close({immediately: true});
     
     // shift all tabs to our right down one in sort order
     index = this.groupSortOrder.indexOf(groupId)
-    this.groupSortOrder.splice(groupId, groupId)
+    this.groupSortOrder.splice(index, 1)
     this.saveSortOrder()
-};
+    this.reloadGroupTabs()
+}
 
 objTabGroupBar.createNewGroup = function(){
     this.tabView._initFrame(function(){
