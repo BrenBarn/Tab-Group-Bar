@@ -27,9 +27,8 @@ objTabGroupBar.init = function(window){
 
 	// doing this early apparently makes group tabs load BEFORE the active page loads
     this.tabView._initFrame()
-
+    
     this.refreshInfo();
-
 
     this.addGlobalEventListeners();	
     this.addTabContextMenuItems();
@@ -616,7 +615,7 @@ objTabGroupBar.toggleBar = function(){
 
 
 /////////////////// Initialize the extension on window load ///////////////////////////
-window.addEventListener("load",
+window.addEventListener("SSWindowStateReady",
     function(e)
     {
         objTabGroupBar.init(window);
