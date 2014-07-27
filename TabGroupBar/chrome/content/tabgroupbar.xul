@@ -25,6 +25,8 @@
                       oncommand="objTabGroupBar.onCloseGroupContextMenuAction(event)"/>
       <menuitem id="TabGroupBar-TabContextMenu-RenameGroup" 	label="Rename Group"
                       oncommand="objTabGroupBar.renameGroupContextAction(event)"/>
+      <menuitem id="TabGroupBar-TabContextMenu-BookmarkGroup" 	label="Bookmark Group"
+                      oncommand="objTabGroupBar.bookmarkGroupContextAction(event)"/>
       <menu 	  id="TabGroupBar-TabContextMenu-TabMenu"		label="Tabs">
             <menupopup   id="TabGroupBar-TabContextMenu-TabMenu-Popup" 
             onpopupshowing="objTabGroupBar.onTabListPopupShowing(event);" 

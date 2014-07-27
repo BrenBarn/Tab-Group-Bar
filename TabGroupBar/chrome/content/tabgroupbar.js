@@ -424,6 +424,38 @@ objTabGroupBar.renameGroupContextAction = function(event){
     this.createRenameGroupTextBox(event.target.parentNode.triggerNode);
 };
 
+objTabGroupBar.bookmarkGroupContextAction = function(event){
+    var tab = this.getPopupSourceElement(event);
+    var groupId = parseInt(tab.value);
+    var group = this.tabView.getContentWindow().GroupItems.groupItem(groupId)
+	this.bookmarkGroup(group)    
+};
+
+objTabGroupBar.bookmarkGroup = function(group) {
+  var folderName=window.prompt("Name of folder to put bookmarks in", group.getTitle());
+  if(folderName){
+    this.bookmarkGroupCore(group, folderName);
+  }
+};
+
+objTabGroupBar.bookmarkGroupCore = function(group, folderName) {
+  var places = Cc["@mozilla.org/browser/nav-bookmarks-service;1"].getService(Ci.nsINavBookmarksService);
+  if(!folderName){
+    folderName = group.getTitle();
+  }
+  
+  parentFolder = places.bookmarksMenuFolder;
+  
+  var newFolderId = places.createFolder(parentFolder, folderName, places.DEFAULT_INDEX);
+  var tabs = group.getChildren()
+  for(let ix=0; ix<tabs.length; ix++) {
+  	var tab = tabs[ix] 
+    var uri = tab.tab.linkedBrowser.currentURI;
+    var title=tab.tab.label;
+    places.insertBookmark(newFolderId, uri, places.DEFAULT_INDEX, title);
+  }
+};
+
 objTabGroupBar.onDbClickTab = function(event){
     this.createRenameGroupTextBox(event.target);
 };
